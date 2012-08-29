@@ -1,0 +1,22 @@
+{% block content_body %}
+ <h1>Registro da Transação Cielo</h1>
+
+{% if not transacao['codigo_erro'] %}
+<b>Código de identificação do pedido (TID): </b> {{transacao['tid']}} <br />
+<b>Número do pedido (numero): </b> {{transacao['pedido']}} <br />
+<b>Valor do pedido (valor): </b> {{transacao['valor']}} <br />
+<b>Moeda do pedido (moeda): </b> {{transacao['moeda']}} <br />
+<b>Data e hora do pedido (data-hora): </b> {{transacao['data_hora']}} <br />
+<b>Descrição do pedido (descricao): </b> {{transacao['descricao']}} <br />
+<b>Idioma do pedido (idioma): </b> {{transacao['idioma']}} <br />
+<b>Bandeira (bandeira): </b> {{transacao['bandeira']}} <br />
+<b>Forma de pagamento (produto): </b> {{transacao['produto']}} <br />
+<b>Número de parcelas (parcelas): </b> {{transacao['parcelas']}} <br />
+<b>Status do pedido (status): </b> {{transacao['status']}} <br />
+<b>URL para autenticação (url-autenticacao): </b> <a href="{{transacao['url']}}" target="_blank">{{transacao['url']}}</a><br />
+{% else %}
+<b>Erro: </b> {{transacao['codigo_erro']}} <br />
+<b>Mensagem: </b> {{transacao['mensagem_erro']}} <br />
+{% endif %}
+
+{% endblock content_body %}

@@ -1,0 +1,32 @@
+{% block content_body %}
+ <h1>Captura da Transação Cielo</h1>
+
+{% if not transacao['codigo_erro'] %}
+<b>Código de identificação do pedido (TID): </b> {{transacao['tid']}} <br />
+<b>PAN do pedido (pan): </b> {{transacao['pan']}} <br />
+<b>Número do pedido (numero): </b> {{transacao['pedido']}} <br />
+<b>Valor do pedido (valor): </b> {{transacao['valor']}} <br />
+<b>Moeda do pedido (moeda): </b> {{transacao['moeda']}} <br />
+<b>Data e hora do pedido (data-hora): </b> {{transacao['data_hora']}} <br />
+<b>Descrição do pedido (descricao): </b> {{transacao['descricao']}} <br />
+<b>Idioma do pedido (idioma): </b> {{transacao['idioma']}} <br />
+<b>Bandeira (bandeira): </b> {{transacao['bandeira']}} <br />
+<b>Forma de pagamento (produto): </b> {{transacao['produto']}} <br />
+<b>Número de parcelas (parcelas): </b> {{transacao['parcelas']}} <br />
+<b>Status do pedido (status): </b> {{transacao['status']}} <br />
+<b>URL para autenticação (url-autenticacao): </b> <a href="{{transacao['url']}}" target="_blank">{{transacao['url']}}</a><br />
+
+{% if transacao['captura'] %}
+<h1>Captura</h1>
+<b>Código da captura (codigo): </b> {{transacao['codigo_captura']}} <br />
+<b>Mensagem do captura (mensagem): </b> {{transacao['mensagem_captura']}} <br />
+<b>Data e hora do captura (data-hora): </b> {{transacao['data_hora_captura']}} <br />
+<b>Valor do captura (valor): </b> {{transacao['valor_captura']}} <br />
+{% endif %}
+
+{% else %}
+<b>Erro: </b> {{transacao['codigo_erro']}} <br />
+<b>Mensagem: </b> {{transacao['mensagem_erro']}} <br />
+{% endif %}
+
+{% endblock content_body %}
