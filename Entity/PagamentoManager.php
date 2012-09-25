@@ -24,9 +24,14 @@ class PagamentoManager
     protected $em;
 
     /**
-     * @var \BFOS\GatewayLocawebBundle\Entity\Transacao $rtransacao
+     * @var TransacaoRepository $rtransacao
      */
     private $rtransacao;
+
+    /**
+     * @var EntityRepository $rcielo
+     */
+    private $rcielo;
 
     /**
      * @var \Symfony\Component\HttpKernel\Log\LoggerInterface $logger
@@ -37,8 +42,23 @@ class PagamentoManager
     {
         $this->container = $container;
         $this->em = $container->get('doctrine')->getEntityManager();
-        $this->rtransacao = $this->container->get('doctrine')->getRepository('BFOSGatewayLocawebBundle:Transacao');
+        $this->rtransacao = $this->em->getRepository('BFOSGatewayLocawebBundle:Transacao');
+        $this->rcielo = $this->em->getRepository('BFOSGatewayLocawebBundle:Cielo');
         $this->logger    = $container->get('logger');
+    }
+
+    /**
+     * @return \Doctrine\ORM\EntityRepository
+     */
+    public function getCieloRepository(){
+        return $this->rcielo;
+    }
+
+    /**
+     * @return TransacaoRepository
+     */
+    public function getTransacaoRepository(){
+        return $this->rtransacao;
     }
 
     //-------------------------- PAGAMENTO BOLETO --------------------------
@@ -52,8 +72,13 @@ class PagamentoManager
      */
     public function registrarPagamentoBoleto(Boleto $pagamento){
 
-        if(($erros = $this->isValidate($pagamento))!==true){
-            return $this->container->get('templating')->renderResponse('BFOSGatewayLocawebBundle:Boleto:boleto.html.twig', array('erro' => $erros));
+        /**
+         * @var \Symfony\Component\Validator\Validator $validator
+         */
+        $validator = $this->container->get('validator');
+        $errors = $validator->validate($pagamento);
+        if(count($errors)){
+            return $errors;
         }
 
         // tenta persistir as informacoes no BD, para garantir a persistencia do que esta sendo enviado
@@ -77,13 +102,18 @@ class PagamentoManager
      *
      * @param \BFOS\GatewayLocawebBundle\Entity\Pagamento $pagamento
      *
-     * @return boolean|\Symfony\Component\Validator\ConstraintViolationList True se o pagamento é valido para ser
-     *         submetido a Locaweb e ConstraintViolationList cajo constrário.
+     * @return RedirectResponse|\Symfony\Component\Validator\ConstraintViolationList   RedirectResponse se o pagamento é valido para ser
+     *         submetido a Locaweb e ConstraintViolationList (lista de erros) caso contrário .
      */
     public function registrarPagamentoCielo(Cielo $pagamento){
 
-        if(($erros = $this->isValidate($pagamento))!==true){
-            return $this->container->get('templating')->renderResponse('BFOSGatewayLocawebBundle:Cielo:cielo.html.twig', array('erro' => $erros));
+        /**
+         * @var \Symfony\Component\Validator\Validator $validator
+         */
+        $validator = $this->container->get('validator');
+        $errors = $validator->validate($pagamento);
+        if(count($errors)){
+            return $errors;
         }
 
         // tenta persistir as informacoes no BD, para garantir a persistencia do que esta sendo enviado
@@ -91,14 +121,14 @@ class PagamentoManager
         $this->em->flush();
 
         //obtem a montagem da URL do componente
-        $url     = $pagamento->getUrlCielo();
+        $urlCielo     = $pagamento->getUrlCielo();
         $request = $pagamento->getParametrosDaTransacao();
-        $retorno = Browser::postUrl($url, $request);
+        $retorno = Browser::postUrl($urlCielo, $request);
 
         //array com os paramentros de retorno do xml do processo da transacao
         $retorno_processo  = array();
 
-        if($retorno['info']['http_code']!=200){
+        if($retorno['info']['http_code']>=400){
             $erro_msg = 'O gateway da Cielo ecommerce da Locaweb nao autorizou o registro da transacao do com a identificacao  '.$pagamento->getIdentificacao()  .' : ' . $retorno['info']['http_code'] . " | " . $retorno['corpo'];
             $pagamento->setErro($erro_msg);
             $this->em->persist($pagamento);
@@ -147,8 +177,8 @@ class PagamentoManager
             $transacao->setTid($tid);
             $transacao->setStatus($status);
             $transacao->setUrlAutenticacao($url);
-            $transacao->setNumero($numero);
-            $transacao->setValor($valor);
+            $transacao->setPedido($numero);
+            $transacao->setValor(((int)$valor)/100);
             $transacao->setMoeda($moeda);
             $transacao->setDataHora($data_hora);
             $transacao->setDescricao($descricao);
@@ -161,14 +191,16 @@ class PagamentoManager
             $this->em->flush();
 
             //processa o status da transacao
-            $seguranca_transacao = $this->array_search_key($status, Helper::$status_transacao);
-
-            $transacaoSituacao = new TransacaoSituacao();
-            $transacaoSituacao->setSituacao($seguranca_transacao);
-
-            $transacao->addSituacao($transacaoSituacao);
-
-            $this->em->persist($transacaoSituacao);
+            if($transacao){
+                $situacao = new TransacaoSituacao();
+                $situacao->setEtapa(TransacaoSituacao::ETAPA_REGISTRO);
+                $situacao->setSituacao('Registrado');
+                $dataHora = new \DateTime();
+                $situacao->setDataHora($dataHora->format('d/m/Y H:i:s'));
+                $situacao->setValor( $transacao->getValor() );
+                $transacao->addSituacao($situacao);
+                $this->em->persist($situacao);
+            }
             $this->em->flush();
 
             //paramentros de retorno do xml do processo da transacao
@@ -197,54 +229,6 @@ class PagamentoManager
             throw new \Exception('Não está configurada a url de redirecionamento para o gateway da Locaweb.');
         } else{
             return new RedirectResponse($url);
-        }
-    }
-
-    /**
-     * Verifica se o pagamento é valido, ou seja, se já pode ser submetido ao gateway da locaweb
-     *
-     * @param \BFOS\GatewayLocawebBundle\Entity\Pagamento $pagamento
-     **/
-    public function isValidate(Pagamento $pagamento){
-
-        $validator = $this->container->get('validator');
-        $errors = $validator->validate($pagamento);
-
-        if (count($errors) > 0){
-            return $errors;
-        } else {
-            return true;
-        }
-    }
-
-    /**
-     * Atualiza a situacao da transacao
-     *
-     * @param string $tid. Código de identificação da transação.
-     * @param string $st. Situacação da transação.
-     * @param string $rt. Retorno de erro ou de status.
-     */
-    public function atualizaSituacaDaTransacao($tid, $st, $rt = 'status'){
-        if(($t = $this->rtransacao->findOneBy(array('tid'=>$tid)))){
-            //processa o status ou erro da transacao
-            if ($rt === 'erro') {
-                $seguranca_transacao = $this->array_search_key((int)$st, Helper::$erros_transacao);
-            }else{
-                $seguranca_transacao = $this->array_search_key((int)$st, Helper::$status_transacao);
-            }
-
-            $ts = new TransacaoSituacao();
-            $ts->setSituacao($seguranca_transacao);
-
-            $t->addSituacao($ts);
-            $t->setStatus($st);
-
-            $this->em->persist($ts);
-            $this->em->flush();
-
-            return true;
-        }else{
-            return false;
         }
     }
 
@@ -279,6 +263,11 @@ class PagamentoManager
         }
 
         /**
+         * @var Transacao $transacao
+         */
+        $transacao = $this->rtransacao->findOneBy(array('tid'=>$tid));
+
+        /**
          * @var \SimpleXMLElement $xml
          **/
         @$xml = (array) simplexml_load_string($retorno['corpo']);
@@ -289,19 +278,29 @@ class PagamentoManager
             $mensagem_erro = (string) $xml['mensagem'];
             $erro_msg = 'O gateway da locaweb retornou o seguinte erro:' . $codigo_erro . '. ' . $mensagem_erro;
 
-            //atualiza o situação da transacao
-            $this->atualizaSituacaDaTransacao($tid, $codigo_erro, 'erro');
+            if($transacao){
+                $situacao = new TransacaoSituacao();
+                $situacao->setEtapa(TransacaoSituacao::ETAPA_ERRO);
+                $situacao->setSituacao($codigo_erro . '. ' . $mensagem_erro);
+                $transacao->addSituacao($situacao);
+                $this->em->persist($transacao);
+            }
 
             throw new \Exception($erro_msg);
         } else {
+
             //paramentros de retorno do xml
             $tid      = (string)  @$xml['tid'];
             $pan      = (string)  @$xml['pan'];
             $status   = (integer) @$xml['status'];
             $url      = (string)  @$xml['url-autenticacao'];
 
-            //atualiza o situação da transacao
-            $this->atualizaSituacaDaTransacao($tid, $status);
+            if($transacao){
+                $transacao->setStatus($status);
+                $transacao->setUrlAutenticacao($url);
+                $transacao->setPan($pan);
+                $this->em->persist($transacao);
+            }
 
             //dados do pedido
             @$dados_pedido = (array) $xml['dados-pedido'];
@@ -326,6 +325,22 @@ class PagamentoManager
             $valor_autenticacao     = (integer) @$autenticacao['valor'];
             $eci_autenticacao       = (integer) @$autenticacao['eci'];
 
+
+            if($transacao && $autenticacao){
+                $situacao = $this->getTransacaoRepository()->findSituacao($transacao,TransacaoSituacao::ETAPA_AUTENTICACAO);
+                if(!$situacao){
+                    $situacao = new TransacaoSituacao();
+                    $situacao->setEtapa(TransacaoSituacao::ETAPA_AUTENTICACAO);
+                    $situacao->setCodigo($codigo_autenticacao);
+                    $situacao->setSituacao($mensagem_autenticacao);
+                    $situacao->setDataHora($data_hora_autenticacao);
+                    $situacao->setValor( ((int) $valor_autenticacao)/100 );
+                    $situacao->setEci($eci_autenticacao);
+                    $transacao->addSituacao($situacao);
+                    $this->em->persist($situacao);
+                }
+            }
+
             //autorizacao
             @$autorizacao = (array) $xml['autorizacao'];
             $codigo_autorizacao    = (integer) @$autorizacao['codigo'];
@@ -335,6 +350,23 @@ class PagamentoManager
             $lr_autorizacao        = (integer) @$autorizacao['lr'];
             $arp_autorizacao       = (string)  @$autorizacao['arp'];
 
+
+            if($transacao && $autorizacao){
+                $situacao = $this->getTransacaoRepository()->findSituacao($transacao,TransacaoSituacao::ETAPA_AUTORIZACAO);
+                if(!$situacao){
+                    $situacao = new TransacaoSituacao();
+                    $situacao->setEtapa(TransacaoSituacao::ETAPA_AUTORIZACAO);
+                    $situacao->setCodigo($codigo_autorizacao);
+                    $situacao->setSituacao($mensagem_autorizacao);
+                    $situacao->setDataHora($data_hora_autorizacao);
+                    $situacao->setValor( ((int) $valor_autorizacao)/100 );
+                    $situacao->setLr($lr_autorizacao);
+                    $situacao->setArp($arp_autorizacao);
+                    $transacao->addSituacao($situacao);
+                    $this->em->persist($situacao);
+                }
+            }
+
             //cancelamento
             @$cancelamento = (array) $xml['cancelamento'];
             $codigo_cancelamento    = (integer) @$cancelamento['codigo'];
@@ -342,12 +374,43 @@ class PagamentoManager
             $data_hora_cancelamento = (string)  @$cancelamento['data-hora'];
             $valor_cancelamento     = (integer) @$cancelamento['valor'];
 
+
+            if($transacao && $cancelamento){
+                $situacao = $this->getTransacaoRepository()->findSituacao($transacao,TransacaoSituacao::ETAPA_CANCELAMENTO);
+                if(!$situacao){
+                    $situacao = new TransacaoSituacao();
+                    $situacao->setEtapa(TransacaoSituacao::ETAPA_CANCELAMENTO);
+                    $situacao->setCodigo($codigo_cancelamento);
+                    $situacao->setSituacao($mensagem_cancelamento);
+                    $situacao->setDataHora($data_hora_cancelamento);
+                    $situacao->setValor( ((int) $valor_cancelamento)/100 );
+                    $transacao->addSituacao($situacao);
+                    $this->em->persist($situacao);
+                }
+            }
+
             //captura
             @$captura = (array) $xml['captura'];
             $codigo_captura    = (integer) @$captura['codigo'];
             $mensagem_captura  = (string)  @$captura['mensagem'];
             $data_hora_captura = (string)  @$captura['data-hora'];
             $valor_captura     = (integer) @$captura['valor'];
+
+
+            if($transacao && $captura){
+                $situacao = $this->getTransacaoRepository()->findSituacao($transacao,TransacaoSituacao::ETAPA_CAPTURA);
+                if(!$situacao){
+                    $situacao = new TransacaoSituacao();
+                    $situacao->setEtapa(TransacaoSituacao::ETAPA_CAPTURA);
+                    $situacao->setCodigo($codigo_captura);
+                    $situacao->setSituacao($mensagem_captura);
+                    $situacao->setDataHora($data_hora_captura);
+                    $situacao->setValor( ((int) $valor_captura)/100 );
+                    $transacao->addSituacao($situacao);
+                    $this->em->persist($situacao);
+                }
+            }
+            $this->em->flush();
 
             //paramentros de retorno do xml do processo da transacao
             $retorno_processo['tid']          = $tid;
@@ -441,6 +504,11 @@ class PagamentoManager
         }
 
         /**
+         * @var Transacao $transacao
+         */
+        $transacao = $this->rtransacao->findOneBy(array('tid'=>$tid));
+
+        /**
          * @var \SimpleXMLElement $xml
          **/
         @$xml = (array) simplexml_load_string($retorno['corpo']);
@@ -452,7 +520,13 @@ class PagamentoManager
             $erro_msg = 'O gateway da locaweb retornou o seguinte erro:' . $codigo_erro . '. ' . $mensagem_erro;
 
             //atualiza o situação da transacao
-            $this->atualizaSituacaDaTransacao($tid, $codigo_erro, 'erro');
+            if($transacao){
+                $situacao = new TransacaoSituacao();
+                $situacao->setEtapa(TransacaoSituacao::ETAPA_ERRO);
+                $situacao->setSituacao($codigo_erro . '. ' . $mensagem_erro);
+                $transacao->addSituacao($situacao);
+                $this->em->persist($transacao);
+            }
 
             throw new \Exception($erro_msg);
         } else {
@@ -516,6 +590,7 @@ class PagamentoManager
             $retorno_processo['mensagem_erro']= '';
 
         }
+        $this->em->flush();
 
         //url de retorno do gateway da cielo ecommerce da locaweb
         if($url == null){
@@ -558,6 +633,11 @@ class PagamentoManager
         }
 
         /**
+         * @var Transacao $transacao
+         */
+        $transacao = $this->rtransacao->findOneBy(array('tid'=>$tid));
+
+        /**
          * @var \SimpleXMLElement $xml
          **/
         @$xml = (array) simplexml_load_string($retorno['corpo']);
@@ -569,7 +649,13 @@ class PagamentoManager
             $erro_msg = 'O gateway da locaweb retornou o seguinte erro:' . $codigo_erro . '. ' . $mensagem_erro;
 
             //atualiza o situação da transacao
-            $this->atualizaSituacaDaTransacao($tid, $codigo_erro, 'erro');
+            if($transacao){
+                $situacao = new TransacaoSituacao();
+                $situacao->setEtapa(TransacaoSituacao::ETAPA_ERRO);
+                $situacao->setSituacao($codigo_erro . '. ' . $mensagem_erro);
+                $transacao->addSituacao($situacao);
+                $this->em->persist($transacao);
+            }
 
             throw new \Exception($erro_msg);
         } else {
@@ -633,6 +719,7 @@ class PagamentoManager
             $retorno_processo['mensagem_erro']= '';
 
         }
+        $this->em->flush();
 
         //url de retorno do gateway da cielo ecommerce da locaweb
         if($url == null){
@@ -675,6 +762,11 @@ class PagamentoManager
         }
 
         /**
+         * @var Transacao $transacao
+         */
+        $transacao = $this->rtransacao->findOneBy(array('tid'=>$tid));
+
+        /**
          * @var \SimpleXMLElement $xml
          **/
         @$xml = (array) simplexml_load_string($retorno['corpo']);
@@ -686,7 +778,13 @@ class PagamentoManager
             $erro_msg = 'O gateway da locaweb retornou o seguinte erro:' . $codigo_erro . '. ' . $mensagem_erro;
 
             //atualiza o situação da transacao
-            $this->atualizaSituacaDaTransacao($tid, $codigo_erro, 'erro');
+            if($transacao){
+                $situacao = new TransacaoSituacao();
+                $situacao->setEtapa(TransacaoSituacao::ETAPA_ERRO);
+                $situacao->setSituacao($codigo_erro . '. ' . $mensagem_erro);
+                $transacao->addSituacao($situacao);
+                $this->em->persist($transacao);
+            }
 
             throw new \Exception($erro_msg);
         } else {
@@ -770,6 +868,7 @@ class PagamentoManager
             $retorno_processo['mensagem_erro']= '';
 
         }
+        $this->em->flush();
 
         //url de retorno do gateway da cielo ecommerce da locaweb
         if($url == null){

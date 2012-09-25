@@ -7,9 +7,10 @@ use Gedmo\Mapping\Annotation as Gedmo;
 
 /**
  * BFOS\GatewayLocawebBundle\Entity\Transacao
+ * BFOSGatewayLocawebBundle:Transacao
  *
  * @ORM\Table(name="bfos_locaweb_transacao")
- * @ORM\Entity
+ * @ORM\Entity(repositoryClass="BFOS\GatewayLocawebBundle\Entity\TransacaoRepository")
  */
 class Transacao
 {
@@ -21,6 +22,14 @@ class Transacao
      * @ORM\GeneratedValue(strategy="AUTO")
      */
     private $id;
+
+    /**
+     * @var Pagamento $pagamento
+     *
+     * @ORM\OneToOne(targetEntity="Pagamento", inversedBy="transacao")
+     * @ORM\JoinColumn(name="pagamento_id", referencedColumnName="id", onDelete="CASCADE", nullable=true)
+     */
+    private  $pagamento;
 
     //-------------------------- PARÂMETROS DE RETORNO DO XML DO REGISTRO DA TRANSAÇÃO --------------------------
 
@@ -36,6 +45,18 @@ class Transacao
      *
      */
     private $tid;
+
+    /**
+     * Hash do número do cartão do portador.
+     *
+     * Tipo: String.
+     *
+     * @var integer $pan
+     *
+     * @ORM\Column(name="pan", type="string",length=40, nullable=true)
+     *
+     */
+    private $pan;
 
     /**
      * Status da transação.
@@ -71,12 +92,12 @@ class Transacao
      * Tipo: Número.
      * Formato: Um número com o limite de 20 dígitos.
      *
-     * @var integer $numero
+     * @var integer $pedido
      *
-     * @ORM\Column(name="numero", type="integer")
+     * @ORM\Column(name="pedido", type="integer")
      *
      */
-    private $numero;
+    private $pedido;
 
     /**
      * Valor total da transação
@@ -316,9 +337,9 @@ class Transacao
      * @param integer $numero
      * @return Transacao
      */
-    public function setNumero($numero)
+    public function setPedido($numero)
     {
-        $this->numero = $numero;
+        $this->pedido = $numero;
         return $this;
     }
 
@@ -327,9 +348,9 @@ class Transacao
      *
      * @return integer 
      */
-    public function getNumero()
+    public function getPedido()
     {
-        return $this->numero;
+        return $this->pedido;
     }
 
     /**
@@ -624,5 +645,81 @@ class Transacao
     public function getUpdated()
     {
         return $this->updated;
+    }
+    /**
+     * Constructor
+     */
+    public function __construct()
+    {
+        $this->situacoes = new \Doctrine\Common\Collections\ArrayCollection();
+    }
+    
+    /**
+     * Set pagamento
+     *
+     * @param \BFOS\GatewayLocawebBundle\Entity\Pagamento $pagamento
+     * @return Transacao
+     */
+    public function setPagamento(\BFOS\GatewayLocawebBundle\Entity\Pagamento $pagamento)
+    {
+        $this->pagamento = $pagamento;
+    
+        return $this;
+    }
+
+    /**
+     * Get pagamento
+     *
+     * @return \BFOS\GatewayLocawebBundle\Entity\Pagamento
+     */
+    public function getPagamento()
+    {
+        return $this->pagamento;
+    }
+
+    /**
+     * Add situacoes
+     *
+     * @param \BFOS\GatewayLocawebBundle\Entity\TransacaoSituacao $situacoes
+     * @return Transacao
+     */
+    public function addSituacoe(\BFOS\GatewayLocawebBundle\Entity\TransacaoSituacao $situacoes)
+    {
+        $this->situacoes[] = $situacoes;
+    
+        return $this;
+    }
+
+    /**
+     * Remove situacoes
+     *
+     * @param \BFOS\GatewayLocawebBundle\Entity\TransacaoSituacao $situacoes
+     */
+    public function removeSituacoe(\BFOS\GatewayLocawebBundle\Entity\TransacaoSituacao $situacoes)
+    {
+        $this->situacoes->removeElement($situacoes);
+    }
+
+    /**
+     * Set pan
+     *
+     * @param string $pan
+     * @return Transacao
+     */
+    public function setPan($pan)
+    {
+        $this->pan = $pan;
+    
+        return $this;
+    }
+
+    /**
+     * Get pan
+     *
+     * @return string 
+     */
+    public function getPan()
+    {
+        return $this->pan;
     }
 }

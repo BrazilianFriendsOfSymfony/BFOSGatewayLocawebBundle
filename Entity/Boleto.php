@@ -4,6 +4,7 @@ namespace BFOS\GatewayLocawebBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 use Gedmo\Mapping\Annotation as Gedmo;
+use Symfony\Component\Validator\Constraints as Assert;
 
 /**
  * BFOS\GatewayLocawebBundle\Entity\Boleto
@@ -16,20 +17,6 @@ class Boleto extends Pagamento
     //-------------------------- OS PARÂMETROS OBRIGATÓRIOS QUE DEVERÃO SER PASSADOS --------------------------
 
     /**
-     * Valor do documento.
-     *
-     * Presença: Obrigatória.
-     * Tipo: String.
-     * Formato: 9999999999999,99 e com o limite de 15 caracteres.
-     *
-     * @var string $valor
-     *
-     * @ORM\Column(name="valor_boleto", type="string", length=15)
-     *
-     */
-    private $valor;
-
-    /**
      * Número do documento. Geralmente, igual ao número do pedido na loja.
      *
      * Presença: Obrigatória.
@@ -40,6 +27,7 @@ class Boleto extends Pagamento
      *
      * @ORM\Column(name="numdoc", type="integer")
      *
+     * @Assert\NotBlank(message="Número do documento é obrigatório.")
      */
     private $numDoc;
 
@@ -50,12 +38,13 @@ class Boleto extends Pagamento
      * Tipo: Texto.
      * Formato: DD/MM/AAAA, com o limite de 10 caracteres.
      *
-     * @var $data
+     * @var \DateTime $data
      *
-     * @ORM\Column(name="data_boleto", type="string", length=10)
+     * @ORM\Column(name="data_boleto", type="date")
      *
+     * @Assert\NotBlank(message="Data de emissão do documento é obrigatório.")
      */
-    private $data;
+    private $dataEmissao;
 
     /**
      * Data de vencimento do boleto.
@@ -65,12 +54,13 @@ class Boleto extends Pagamento
      * Tipo: Texto.
      * Formato: DD/MM/AAAA, com o limite de 10 caracteres.
      *
-     * @var string $vencimento
+     * @var \DateTime $vencimento
      *
-     * @ORM\Column(name="vencimento_boleto", type="string", length=10)
+     * @ORM\Column(name="vencimento_boleto", type="date")
      *
+     * @Assert\NotBlank(message="Data de vencimento do boleto é obrigatória.")
      */
-    private $vencimento;
+    private $dataVencimento;
 
     //-------------------------- OS PARÂMETROS ADICIONAIS DEVEM SER POSTADOS DE ACORDO COM A NECESSIDADE DO BOLETO E DISPONIBILIDADE DESSA OPÇÃO PELO BANCO --------------------------
 
@@ -410,28 +400,7 @@ class Boleto extends Pagamento
     function __construct()
     {
         $this->botoesBoleto = 1;
-    }
-
-    /**
-     * Set valor
-     *
-     * @param string $valor
-     * @return Pagamento
-     */
-    public function setValor($valor)
-    {
-        $this->valor = $valor;
-        return $this;
-    }
-
-    /**
-     * Get valor
-     *
-     * @return string
-     */
-    public function getValor()
-    {
-        return $this->valor;
+        $this->setModulo('BOLETOLOCAWEB');
     }
 
     /**
@@ -652,50 +621,6 @@ class Boleto extends Pagamento
     public function getUf()
     {
         return $this->uf;
-    }
-
-    /**
-     * Set data
-     *
-     * @param string $data
-     * @return Pagamento
-     */
-    public function setData($data)
-    {
-        $this->data = $data;
-        return $this;
-    }
-
-    /**
-     * Get data
-     *
-     * @return string
-     */
-    public function getData()
-    {
-        return $this->data;
-    }
-
-    /**
-     * Set vencimento
-     *
-     * @param date $vencimento
-     * @return Pagamento
-     */
-    public function setVencimento($vencimento)
-    {
-        $this->vencimento = $vencimento;
-        return $this;
-    }
-
-    /**
-     * Get vencimento
-     *
-     * @return date
-     */
-    public function getVencimento()
-    {
-        return $this->vencimento;
     }
 
     /**
@@ -1013,7 +938,7 @@ class Boleto extends Pagamento
         $url .= 'identificacao=' . self::getIdentificacao();
         $url .= '&modulo=' . self::getModulo();
         $url .= '&ambiente=' . self::getAmbiente();
-        $url .= '&valor=' . $this->getValor();
+        $url .= '&valor=' . number_format($this->getValorTotal(),2,',', '');
         $url .= '&numdoc=' . $this->getNumDoc();
         $url .= '&sacado=' . $this->getSacado();
         $url .= '&cgccpfsac=' . $this->getCgcCpf();
@@ -1024,8 +949,8 @@ class Boleto extends Pagamento
         $url .= '&cidadesac=' . $this->getCidade();
         $url .= '&cepsac=' . $this->getCep();
         $url .= '&ufsac=' . $this->getUf();
-        $url .= '&datadoc=' . $this->getData();
-        $url .= '&vencto=' . $this->getVencimento();
+        $url .= '&datadoc=' . $this->getDataEmissao()->format('d/m/Y');
+        $url .= '&vencto=' . $this->getDataVencimento()->format('d/m/Y');
         $url .= '&instr1=' . $this->getInstrucao1();
         $url .= '&instr2=' . $this->getInstrucao2();
         $url .= '&instr3=' . $this->getInstrucao3();
@@ -1045,4 +970,48 @@ class Boleto extends Pagamento
         return utf8_decode($url);
     }
 
+
+    /**
+     * Set dataEmissao
+     *
+     * @param \DateTime $dataEmissao
+     * @return Boleto
+     */
+    public function setDataEmissao($dataEmissao)
+    {
+        $this->dataEmissao = $dataEmissao;
+        return $this;
+    }
+
+    /**
+     * Get dataEmissao
+     *
+     * @return \DateTime
+     */
+    public function getDataEmissao()
+    {
+        return $this->dataEmissao;
+    }
+
+    /**
+     * Set dataVencimento
+     *
+     * @param \DateTime $dataVencimento
+     * @return Boleto
+     */
+    public function setDataVencimento($dataVencimento)
+    {
+        $this->dataVencimento = $dataVencimento;
+        return $this;
+    }
+
+    /**
+     * Get dataVencimento
+     *
+     * @return \DateTime
+     */
+    public function getDataVencimento()
+    {
+        return $this->dataVencimento;
+    }
 }

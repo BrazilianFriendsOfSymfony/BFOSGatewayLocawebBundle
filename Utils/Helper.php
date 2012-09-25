@@ -17,16 +17,13 @@ class Helper
         10 => 'Em autenticação'
     );
 
-    static $seguranca_transacao_visa = array(
-         5 => 'Portador autenticado com sucesso',
-         6 => 'Portador não realizou autenticação, pois o Emissor não forneceu mecanismos de autenticação',
-         7 => 'Portador não se autenticou com sucesso ou a loja optou por autorizar sem passar pela autenticação'
-    );
-
-    static $seguranca_transacao_mastercard = array(
-         2 => 'Portador autenticado com sucesso',
-         1 => 'Portador não realizou autenticação, pois o Emissor não forneceu mecanismos de autenticação',
-         0 => 'Portador não se autenticou com sucesso ou a loja optou por autorizar sem passar pela autenticação'
+    static $seguranca_transacao = array(
+        2 => 'Portador autenticado com sucesso',
+        1 => 'Portador não realizou autenticação, pois o Emissor não forneceu mecanismos de autenticação',
+        0 => 'Portador não se autenticou com sucesso ou a loja optou por autorizar sem passar pela autenticação',
+        5 => 'Portador autenticado com sucesso',
+        6 => 'Portador não realizou autenticação, pois o Emissor não forneceu mecanismos de autenticação',
+        7 => 'Portador não se autenticou com sucesso ou a loja optou por autorizar sem passar pela autenticação'
     );
 
     static $erros_transacao = array(

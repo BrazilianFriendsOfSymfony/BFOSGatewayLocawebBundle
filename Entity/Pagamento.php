@@ -4,9 +4,11 @@ namespace BFOS\GatewayLocawebBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 use Gedmo\Mapping\Annotation as Gedmo;
+use Symfony\Component\Validator\Constraints as Assert;
 
 /**
  * BFOS\GatewayLocawebBundle\Entity\Pagamento
+ * BFOSGatewayLocawebBundle:Pagamento
  *
  * @ORM\Entity
  * @ORM\InheritanceType("SINGLE_TABLE")
@@ -26,6 +28,12 @@ class Pagamento
      */
     private $id;
 
+    /**
+     * @var Transacao $transacao
+     *
+     * @ORM\OneToOne(targetEntity="Transacao", mappedBy="pagamento")
+     */
+    private $transacao;
 
     //-------------------------- OS PARÂMETROS OBRIGATÓRIOS QUE DEVERÃO SER PASSADOS --------------------------
 
@@ -40,6 +48,7 @@ class Pagamento
     *
     * @ORM\Column(name="identificacao", type="integer")
     *
+    * @Assert\NotBlank(message="Identificação é obrigatória.")
     */
     private $identificacao;
 
@@ -54,6 +63,7 @@ class Pagamento
      *
      * @ORM\Column(name="modulo", type="string", length=15)
      *
+     * @Assert\NotBlank(message="Módulo de pagamento é obrigatório.")
      */
     private $modulo;
 
@@ -68,8 +78,31 @@ class Pagamento
      *
      * @ORM\Column(name="ambiente", type="string", length=10)
      *
+     * @Assert\NotBlank(message="Ambiente é obrigatório")
      */
     private $ambiente;
+
+
+    /**
+     * Valor do documento.
+     *
+     * BOLETO:
+     * Presença: Obrigatória.
+     * Tipo: String.
+     * Formato: 9999999999999,99 e com o limite de 15 caracteres.
+     *
+     * CIELO:
+     * Valor total da transação sem pontuação – os últimos dois dígitos representam sempre os centavos.
+     * Utilizar: 100 para R$ 1,00
+     *
+     * @var string $valor
+     *
+     * @ORM\Column(name="valor_total", type="decimal", scale=2)
+     *
+     * @Assert\NotBlank(message="Valor total é obrigatório.")
+     */
+    private $valorTotal;
+
 
     /**
      *Código do erro. Identifica a natureza do erro encontrado e permite o tratamento do erro pelo seu sistema.
@@ -97,6 +130,45 @@ class Pagamento
      * @Gedmo\Timestampable(on="update")
      */
     private $updated;
+
+
+    /**
+     * Número do pedido para controle interno da sua loja.
+     *
+     * Presença: Obrigatória.
+     * Tipo: String.
+     * Formato: Livre, com o limite de 20 caracteres.
+     *
+     * @var string $pedido
+     *
+     * @ORM\Column(name="pedido", type="string", length=20)
+     *
+     * @Assert\NotBlank(message="Número do pedido deve ser definido")
+     */
+    private $pedido;
+
+
+    /**
+     * Set pedido
+     *
+     * @param string $pedido
+     * @return Cielo
+     */
+    public function setPedido($pedido)
+    {
+        $this->pedido = $pedido;
+        return $this;
+    }
+
+    /**
+     * Get pedido
+     *
+     * @return string
+     */
+    public function getPedido()
+    {
+        return $this->pedido;
+    }
 
 
     /**
@@ -245,4 +317,49 @@ class Pagamento
         }
     }
 
+
+    /**
+     * Set valorTotal
+     *
+     * @param float $valorTotal
+     * @return Pagamento
+     */
+    public function setValorTotal($valorTotal)
+    {
+        $this->valorTotal = $valorTotal;
+        return $this;
+    }
+
+    /**
+     * Get valorTotal
+     *
+     * @return float
+     */
+    public function getValorTotal()
+    {
+        return $this->valorTotal;
+    }
+
+    /**
+     * Set transacao
+     *
+     * @param \BFOS\GatewayLocawebBundle\Entity\Transacao $transacao
+     * @return Pagamento
+     */
+    public function setTransacao(\BFOS\GatewayLocawebBundle\Entity\Transacao $transacao = null)
+    {
+        $this->transacao = $transacao;
+    
+        return $this;
+    }
+
+    /**
+     * Get transacao
+     *
+     * @return \BFOS\GatewayLocawebBundle\Entity\Transacao
+     */
+    public function getTransacao()
+    {
+        return $this->transacao;
+    }
 }

@@ -5,12 +5,15 @@ namespace BFOS\GatewayLocawebBundle\Controller;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Template;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
 use \BFOS\GatewayLocawebBundle\Entity\Cielo;
+use BFOS\GatewayLocawebBundle\Entity\PagamentoManager;
+use BFOS\GatewayLocawebBundle\Entity\Pagamento;
 
 class CieloController extends Controller
 {
     /**
-     * @Route("admin/cielo")
+     * @Route("admin/bfos-gateway-locaweb/cielo")
      * @Template()
      */
     public function indexAction()
@@ -47,30 +50,35 @@ class CieloController extends Controller
     }
 
     /**
-     * @Route("admin/consulta/cielo")
+     * @Route("/{pedido}/consulta", name="bfos_gateway_locaweb_cielo_consulta")
      * @Template()
+     * @Method("get")
      */
-    public function consultaAction()
+    public function consultaAction($pedido)
     {
 
         /**
-         * @var \Doctrine\ORM\EntityManager $em
+         * @var PagamentoManager $mpagamento
          */
-        $em = $this->getDoctrine()->getEntityManager();
-
+        $mpagamento = $this->get('bfos_gateway_locaweb.pagamento_manager');
         /**
-         * manager do pedido bundle
+         * @var Pagamento $pagamento
          */
-        $mpagamento = $this->get('gateway_locaweb.manager');
+        $pagamento = $mpagamento->getCieloRepository()->findOneBy(array('pedido'=>$pedido));
 
         //dados do processo
         $identificacao = $this->container->getParameter('key_secret_service_locaweb');
-        $modulo   = 'cielo';
+        $modulo   = $pagamento->getModulo();
         $operacao = 'consulta';
-        $ambiente = 'teste';
+        $ambiente = $pagamento->getAmbiente();
 
         //dados do pedido
-        $tid      = '10017348980885221001';
+        if($pagamento->getTransacao()){
+            $tid      = $pagamento->getTransacao()->getTid();
+        } else {
+            $transacao = $mpagamento->getTransacaoRepository()->findOneBy(array('pedido'=>$pedido));
+            $tid = $transacao->getTid();
+        }
 
         return $mpagamento->consultaTransacao($identificacao, $modulo, $operacao, $ambiente, $tid);
 

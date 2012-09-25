@@ -1,0 +1,69 @@
+<div class="pagseguro">
+
+    {% if pagamento is not empty %}
+    <table class="table table-striped">
+        <tbody>
+        {% if pagamento.modulo is defined %}
+        <tr>
+            <th>Módulo</th>
+            <td>{{ pagamento.modulo }}</td>
+        </tr>
+        {% endif %}
+        <tr>
+            <th>Ambiente</th>
+            <td>{{ pagamento.ambiente }}</td>
+        </tr>
+        <tr>
+            <th>Valor total</th>
+            <td>{{ pagamento.valorTotal|number_format(2,',','.') }}</td>
+        </tr>
+
+        </tbody>
+    </table>
+    {% endif %}
+
+    {% if transacao is defined and transacao is not empty %}
+    <h3 class="mb-5">Detalhes da transação</h3>
+
+    <div class="transacao">
+        <table class="table table-striped">
+            <tr>
+                <th>Data</th>
+                <td>{{transacao.dataHora|date('d-m-Y H:i:s')}}</td>
+            </tr>
+            <tr>
+                <th>Descricao</th>
+                <td>{{transacao.descricao}}</td>
+            </tr>
+            <tr>
+                <th>Valor</th>
+                <td>{{transacao.valor|number_format(2,',','.')}}</td>
+            </tr>
+            <tr>
+                <th>Ocorreu em</th>
+                <td>{{transacao.updated|date('d-m-Y H:i:s')}}</td>
+            </tr>
+            <tr>
+                <th>Situação</th>
+                <td>
+                    <ul>
+                    {% for situacao in transacao.situacoes %}
+                    <li>
+                        {{situacao.etapaLabel}} {% if situacao.codigo is not empty %}({{situacao.codigo}}){% endif %} <br>
+                        {{situacao.dataHora}} -
+                        {{situacao.situacao}}
+                        {% if situacao.etapa == 1%}
+                        <br>ECI: {{situacao.eciLabel}}
+                        {% endif %}
+                        {% if situacao.etapa == 2%}
+                        <br>LR: {{situacao.lr}} - ARP: {{situacao.arp}}
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                    </ul>
+                </td>
+            </tr>
+        </table>
+    </div>
+    {% endif %}
+</div>

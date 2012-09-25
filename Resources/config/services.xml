@@ -4,14 +4,18 @@
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
 
-    <!--
     <parameters>
-        <parameter key="bfos_gateway_locaweb.example.class">BFOS\GatewayLocawebBundle\Example</parameter>
+        <parameter key="bfos_gateway_locaweb.pagamento_manager.class">BFOS\GatewayLocawebBundle\Entity\PagamentoManager</parameter>
+        <parameter key="bfos_gateway_locaweb.twig_extension.class">BFOS\GatewayLocawebBundle\Twig\TwigExtension</parameter>
     </parameters>
-    -->
     <services>
-        <service id="gateway_locaweb.manager" class="BFOS\GatewayLocawebBundle\Entity\PagamentoManager">
+        <service id="bfos_gateway_locaweb.pagamento_manager" class="%bfos_gateway_locaweb.pagamento_manager.class%">
             <argument type="service" id="service_container"/>
+        </service>
+
+        <service id="bfos_gateway_locaweb.twig_extension" class="%bfos_gateway_locaweb.twig_extension.class%">
+            <tag name="twig.extension"/>
+            <argument type="service" id="service_container" />
         </service>
     </services>
 </container>

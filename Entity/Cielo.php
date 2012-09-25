@@ -4,6 +4,7 @@ namespace BFOS\GatewayLocawebBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 use Gedmo\Mapping\Annotation as Gedmo;
+use Symfony\Component\Validator\Constraints as Assert;
 
 /**
  * BFOS\GatewayLocawebBundle\Entity\Cielo
@@ -26,37 +27,9 @@ class Cielo extends Pagamento
      *
      * @ORM\Column(name="operacao", type="string", length=10)
      *
+     * @Assert\NotBlank(message="Operacao deve ser definida")
      */
     private $operacao;
-
-    /**
-     * Valor total da transação sem pontuação – os últimos dois dígitos representam sempre os centavos.
-     * Utilizar: 100 para R$ 1,00
-     *
-     * Presença: Obrigatória.
-     * Tipo: Número.
-     * Formato: Um número com o limite de 12 dígitos.
-     *
-     * @var integer $valor
-     *
-     * @ORM\Column(name="valor_transacao", type="integer")
-     *
-     */
-    private $valor;
-
-    /**
-     * Número do pedido para controle interno da sua loja.
-     *
-     * Presença: Obrigatória.
-     * Tipo: String.
-     * Formato: Livre, com o limite de 20 caracteres.
-     *
-     * @var string $pedido
-     *
-     * @ORM\Column(name="pedido", type="string", length=20)
-     *
-     */
-    private $pedido;
 
     /**
      * Bandeira
@@ -69,6 +42,7 @@ class Cielo extends Pagamento
      *
      * @ORM\Column(name="bandeira", type="string", length=10)
      *
+     * @Assert\NotBlank(message="Bandeira deve ser definida.")
      */
     private $bandeira;
 
@@ -88,6 +62,7 @@ class Cielo extends Pagamento
      *
      * @ORM\Column(name="forma_pagamento", type="integer")
      *
+     * @Assert\NotBlank(message="Forma de pagamento deve ser definida")
      */
     private $formaPagamento;
 
@@ -103,6 +78,7 @@ class Cielo extends Pagamento
      *
      * @ORM\Column(name="parcelas", type="integer")
      *
+     * @Assert\NotBlank(message="Parcelas deve ser definida.")
      */
     private $parcelas;
 
@@ -122,6 +98,7 @@ class Cielo extends Pagamento
      *
      * @ORM\Column(name="autorizar", type="integer")
      *
+     * @Assert\NotBlank(message="Autorizar deve ser definido.")
      */
     private $autorizar;
 
@@ -137,6 +114,7 @@ class Cielo extends Pagamento
      *
      * @ORM\Column(name="capturar", type="string", length=5)
      *
+     * @Assert\NotBlank(message="Capturar deve ser definido.")
      */
     private $capturar;
 
@@ -202,6 +180,12 @@ class Cielo extends Pagamento
      */
     private $campoLivre;
 
+    function __construct()
+    {
+        $this->setModulo('CIELO');
+        $this->operacao = 'Registro';
+    }
+
 
     /**
      * Set operacao
@@ -223,50 +207,6 @@ class Cielo extends Pagamento
     public function getOperacao()
     {
         return $this->operacao;
-    }
-
-    /**
-     * Set valor
-     *
-     * @param integer $valor
-     * @return Cielo
-     */
-    public function setValor($valor)
-    {
-        $this->valor = $valor;
-        return $this;
-    }
-
-    /**
-     * Get valor
-     *
-     * @return integer 
-     */
-    public function getValor()
-    {
-        return $this->valor;
-    }
-
-    /**
-     * Set pedido
-     *
-     * @param string $pedido
-     * @return Cielo
-     */
-    public function setPedido($pedido)
-    {
-        $this->pedido = $pedido;
-        return $this;
-    }
-
-    /**
-     * Get pedido
-     *
-     * @return string 
-     */
-    public function getPedido()
-    {
-        return $this->pedido;
     }
 
     /**
@@ -476,7 +416,7 @@ class Cielo extends Pagamento
         $request .= '&ambiente=' . self::getAmbiente();
         $request .= '&bin_cartao=' . $this->getBinCartao();
         $request .= '&idioma=' . $this->getIdioma();
-        $request .= '&valor=' . $this->getValor();
+        $request .= '&valor=' . number_format($this->getValorTotal(), 2, '', '');
         $request .= '&pedido=' . $this->getPedido();
         $request .= '&descricao=' . $this->getDescricao();
         $request .= '&bandeira=' . $this->getBandeira();
