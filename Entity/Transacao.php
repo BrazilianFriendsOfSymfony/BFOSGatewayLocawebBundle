@@ -576,7 +576,7 @@ class Transacao
     /**
      * Add situacoes
      *
-     * @param BFOS\GatewayLocawebBundle\Entity\TransacaoSituacao $situacoes
+     * @param \BFOS\GatewayLocawebBundle\Entity\TransacaoSituacao $situacoes
      * @return Transacao
      */
     public function addSituacao(TransacaoSituacao $situacao){

@@ -3,6 +3,7 @@
 namespace BFOS\GatewayLocawebBundle\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+use Symfony\Component\HttpFoundation\Response;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Template;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
@@ -80,7 +81,7 @@ class CieloController extends Controller
             $tid = $transacao->getTid();
         }
 
-        return $mpagamento->consultaTransacao($identificacao, $modulo, $operacao, $ambiente, $tid);
+        return new Response('ok');
 
     }
 

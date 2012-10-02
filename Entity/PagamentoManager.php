@@ -61,6 +61,23 @@ class PagamentoManager
         return $this->rtransacao;
     }
 
+    /**
+     * Obtem o TID a partir do id do pedido.
+     *
+     * @param int|string $pedido
+     * @return string TID
+     */
+    public function obterTidAPartirDoPedido($pedido){
+        /**
+         * @var Transacao $transacao
+         */
+        $transacao = $this->getTransacaoRepository()->findOneBy(array('pedido'=>$pedido));
+        if($transacao){
+            return $transacao->getTid();
+        }
+        return null;
+    }
+
     //-------------------------- PAGAMENTO BOLETO --------------------------
     /**
      * Registra o pagamento junto ao gateway da locaweb
@@ -128,6 +145,13 @@ class PagamentoManager
         //array com os paramentros de retorno do xml do processo da transacao
         $retorno_processo  = array();
 
+        if(isset($retorno['erro_num'])){
+            $erro_msg = 'Houve um problema de comunicação:  '.$retorno['erro_msg'];
+            $pagamento->setErro($erro_msg);
+            $this->em->persist($pagamento);
+            $this->em->flush();
+            throw new \Exception($erro_msg);
+        }
         if($retorno['info']['http_code']>=400){
             $erro_msg = 'O gateway da Cielo ecommerce da Locaweb nao autorizou o registro da transacao do com a identificacao  '.$pagamento->getIdentificacao()  .' : ' . $retorno['info']['http_code'] . " | " . $retorno['corpo'];
             $pagamento->setErro($erro_msg);
@@ -226,6 +250,7 @@ class PagamentoManager
 
         //url de retorno do gateway da cielo ecommerce da locaweb
         if($url == null){
+            return null;
             throw new \Exception('Não está configurada a url de redirecionamento para o gateway da Locaweb.');
         } else{
             return new RedirectResponse($url);
@@ -236,13 +261,18 @@ class PagamentoManager
      * Retorno XML da Consulta da transação
      *
      * @param integer $identificacao. Código do serviço de comércio eletrônico junto à Locaweb.
-     * @param string $modulo. Nome do módulo de pagamento utilizado. Utilizar: CIELO
-     * @param string $operacao. Define a ação que será executada. Utilizar: Consulta
      * @param string $ambiente. Nome do ambiente utilizado para consulta
      * @param string $tid. Código de identificação da transação.
      */
-    public function consultaTransacao($identificacao, $modulo, $operacao, $ambiente, $tid){
+    public function consultaTransacao($identificacao, $ambiente, $tid){
         $url = 'https://comercio.locaweb.com.br/comercio.comp';
+
+        /**
+         * @var string $modulo - Nome do módulo de pagamento utilizado. Utilizar: CIELO
+         * @var string $operacao - Define a ação que será executada. Utilizar: Consulta
+         */
+        $modulo = 'CIELO';
+        $operacao = 'Consulta';
 
         //obtem a montagem da URL do componente
         $request  = 'identificacao=' . $identificacao;
@@ -462,6 +492,8 @@ class PagamentoManager
             $retorno_processo['mensagem_erro']= '';
 
         }
+
+        return $transacao;
 
         //url de retorno do gateway da cielo ecommerce da locaweb
         if($url == null){

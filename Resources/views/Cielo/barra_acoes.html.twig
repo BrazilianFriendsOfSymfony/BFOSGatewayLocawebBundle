@@ -1,7 +1,5 @@
 <div id="bfos_gateway_locaweb_cielo_barra_acoes" class="btn-group">
     <button class="js_bfos_gateway_locaweb_cielo_consultar_btn btn">consultar</button>
-    <button class="btn">2</button>
-    <button class="btn">3</button>
 </div>
 <script type="text/javascript">
     require(['jquery'], function($){
@@ -10,7 +8,10 @@
 
             $(document).delegate('.js_bfos_gateway_locaweb_cielo_consultar_btn', 'click', function(e){
                 e.preventDefault();
-                $.get('{{path('bfos_gateway_locaweb_cielo_consulta',{'pedido':pedido})}}');
+                $.get('{{path('bfos_gateway_locaweb_cielo_consulta',{'pedido':pedido})}}')
+                        .success(function(data){
+                            window.location.reload();
+                        });
             });
 
         });
