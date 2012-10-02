@@ -145,7 +145,7 @@ class PagamentoManager
         //array com os paramentros de retorno do xml do processo da transacao
         $retorno_processo  = array();
 
-        if(isset($retorno['erro_num'])){
+        if(isset($retorno['erro_num']) && $retorno['erro_num']){
             $erro_msg = 'Houve um problema de comunicação:  '.$retorno['erro_msg'];
             $pagamento->setErro($erro_msg);
             $this->em->persist($pagamento);
