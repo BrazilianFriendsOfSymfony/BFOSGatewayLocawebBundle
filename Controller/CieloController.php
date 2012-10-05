@@ -10,6 +10,7 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
 use \BFOS\GatewayLocawebBundle\Entity\Cielo;
 use BFOS\GatewayLocawebBundle\Entity\PagamentoManager;
 use BFOS\GatewayLocawebBundle\Entity\Pagamento;
+use BFOS\GatewayLocawebBundle\Entity\Transacao;
 
 class CieloController extends Controller
 {
@@ -67,18 +68,12 @@ class CieloController extends Controller
          */
         $pagamento = $mpagamento->getCieloRepository()->findOneBy(array('pedido'=>$pedido));
 
-        //dados do processo
-        $identificacao = $this->container->getParameter('key_secret_service_locaweb');
-        $modulo   = $pagamento->getModulo();
-        $operacao = 'consulta';
-        $ambiente = $pagamento->getAmbiente();
-
         //dados do pedido
-        if($pagamento->getTransacao()){
-            $tid      = $pagamento->getTransacao()->getTid();
-        } else {
-            $transacao = $mpagamento->getTransacaoRepository()->findOneBy(array('pedido'=>$pedido));
-            $tid = $transacao->getTid();
+        if($pagamento && $pagamento->getTransacoes()->count()){
+            $tid      = $pagamento->getTransacoes()->first()->getTid();
+            $identificacao = $pagamento->getIdentificacao();
+            $ambiente = $pagamento->getAmbiente();
+            $mpagamento->consultaTransacao($identificacao, $ambiente, $tid);
         }
 
         return new Response('ok');

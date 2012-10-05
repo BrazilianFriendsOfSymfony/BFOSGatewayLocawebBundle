@@ -5,6 +5,7 @@ namespace BFOS\GatewayLocawebBundle\Entity;
 use Doctrine\ORM\Mapping as ORM;
 use Gedmo\Mapping\Annotation as Gedmo;
 use Symfony\Component\Validator\Constraints as Assert;
+use Doctrine\Common\Collections\Collection;
 
 /**
  * BFOS\GatewayLocawebBundle\Entity\Pagamento
@@ -29,11 +30,11 @@ class Pagamento
     private $id;
 
     /**
-     * @var Transacao $transacao
+     * @var Collection $transacoes
      *
-     * @ORM\OneToOne(targetEntity="Transacao", mappedBy="pagamento")
+     * @ORM\OneToMany(targetEntity="Transacao", mappedBy="pagamento")
      */
-    private $transacao;
+    private $transacoes;
 
     //-------------------------- OS PARÂMETROS OBRIGATÓRIOS QUE DEVERÃO SER PASSADOS --------------------------
 
@@ -148,6 +149,14 @@ class Pagamento
     private $pedido;
 
 
+    /**
+     * Constructor
+     */
+    public function __construct()
+    {
+        $this->transacoes = new \Doctrine\Common\Collections\ArrayCollection();
+    }
+    
     /**
      * Set pedido
      *
@@ -341,25 +350,35 @@ class Pagamento
     }
 
     /**
-     * Set transacao
+     * Add transacoes
      *
      * @param \BFOS\GatewayLocawebBundle\Entity\Transacao $transacao
      * @return Pagamento
      */
-    public function setTransacao(\BFOS\GatewayLocawebBundle\Entity\Transacao $transacao = null)
+    public function addTransacao(\BFOS\GatewayLocawebBundle\Entity\Transacao $transacao)
     {
-        $this->transacao = $transacao;
+        $this->transacoes[] = $transacao;
     
         return $this;
     }
 
     /**
-     * Get transacao
+     * Remove transacoes
      *
-     * @return \BFOS\GatewayLocawebBundle\Entity\Transacao
+     * @param \BFOS\GatewayLocawebBundle\Entity\Transacao $transacao
      */
-    public function getTransacao()
+    public function removeTransacao(\BFOS\GatewayLocawebBundle\Entity\Transacao $transacao)
     {
-        return $this->transacao;
+        $this->transacoes->removeElement($transacao);
+    }
+
+    /**
+     * Get transacoes
+     *
+     * @return \Doctrine\Common\Collections\Collection
+     */
+    public function getTransacoes()
+    {
+        return $this->transacoes;
     }
 }

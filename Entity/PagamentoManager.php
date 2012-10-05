@@ -2,6 +2,8 @@
 namespace BFOS\GatewayLocawebBundle\Entity;
 
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use BFOS\GatewayLocawebBundle\Event\GaterwayLocawebEvents;
+use BFOS\GatewayLocawebBundle\Event\TransacaoEvent;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Doctrine\ORM\EntityRepository;
@@ -198,6 +200,7 @@ class PagamentoManager
 
             //registra a transacao
             $transacao = new Transacao();
+            $transacao->setPagamento($pagamento);
             $transacao->setTid($tid);
             $transacao->setStatus($status);
             $transacao->setUrlAutenticacao($url);
@@ -493,16 +496,11 @@ class PagamentoManager
 
         }
 
-        return $transacao;
+        // do something before the method
+        $event = new TransacaoEvent($transacao);
+        $this->container->get('event_dispatcher')->dispatch(GaterwayLocawebEvents::onPostConsultaTransacao, $event);
 
-        //url de retorno do gateway da cielo ecommerce da locaweb
-        if($url == null){
-            //throw new \Exception('Não está configurada a url de redirecionamento para o gateway da Locaweb.');
-            //view de retorno da consulta da transacao
-            return $this->container->get('templating')->renderResponse('BFOSGatewayLocawebBundle:Cielo:consulta_transacao.html.twig', array('transacao' => $retorno_processo));
-        } else{
-            return new RedirectResponse($url);
-        }
+        return $transacao;
     }
 
     /**

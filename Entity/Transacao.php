@@ -26,7 +26,7 @@ class Transacao
     /**
      * @var Pagamento $pagamento
      *
-     * @ORM\OneToOne(targetEntity="Pagamento", inversedBy="transacao")
+     * @ORM\ManyToOne(targetEntity="Pagamento", inversedBy="transacoes")
      * @ORM\JoinColumn(name="pagamento_id", referencedColumnName="id", onDelete="CASCADE", nullable=true)
      */
     private  $pagamento;
@@ -57,6 +57,17 @@ class Transacao
      *
      */
     private $pan;
+
+    const STATUS_CRIADA = 0;
+    const STATUS_EM_ANDAMENTO = 1;
+    const STATUS_AUTENTICADA = 2;
+    const STATUS_NAO_AUTENTICADA = 3;
+    const STATUS_AUTORIZADA_OU_PENDENTE_DE_CAPTURA = 4;
+    const STATUS_NAO_AUTORIZADA = 5;
+    const STATUS_CAPTURADA = 6;
+    const STATUS_NAO_CAPTURADA = 8;
+    const STATUS_CANCELADA = 9;
+    const STATUS_EM_AUTENTICACAO = 10;
 
     /**
      * Status da transação.
