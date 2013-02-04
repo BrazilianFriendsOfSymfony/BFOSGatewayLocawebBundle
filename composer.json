@@ -2,7 +2,7 @@
     "name": "brazilianfriendsofsymfony/gateway-locaweb-bundle",
     "type": "symfony-bundle",
     "description": "Symfony BFOSGatewayLocawebBundle",
-    "keywords": ["Integração gateway de pagamento Locaweb"],
+    "keywords": ["Integracao gateway de pagamento Locaweb"],
     "homepage": "http://www.duocriativa.com.br/bfos",
     "license": "MIT",
     "authors": [
